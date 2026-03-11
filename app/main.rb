@@ -1,85 +1,105 @@
+def boot args
+  args.state = {}
+  
+end
+
 def tick args
-  args.state.logo_rect ||= { x: 576,
-                             y: 200,
-                             w: 128,
-                             h: 101 }
+  args.outputs.background_color = [20,20,20]
+  args.outputs.solids << text_box
 
-  args.outputs.labels  << { x: 640,
-                            y: 600,
-                            text: 'Hello World!',
-                            size_px: 30,
-                            anchor_x: 0.5,
-                            anchor_y: 0.5 }
+  args.state.current_message ||= nil
+  args.state.displayed_message ||= ""
+  args.state.new_character_tick ||= 0
+  Speeds ||= {
+    TURTLE: 0.5.seconds,
+    SLOW: 0.25.seconds,
+    MEDIUM: 0.06.seconds,
+    FAST: 0.01.seconds,
+    HYPER: 0.002.seconds
+  }
 
-  args.outputs.labels  << { x: 640,
-                            y: 510,
-                            text: "Documentation is located under the ./docs directory. 150+ samples are located under the ./samples directory.",
-                            size_px: 20,
-                            anchor_x: 0.5,
-                            anchor_y: 0.5 }
+  Expressions ||= {
+    NORMAL: 1,
+    QUIET: 2,
+    LOUD: 3
+  }
 
-  args.outputs.labels  << { x: 640,
-                            y: 480,
-                            text: "You can also access these docs online at docs.dragonruby.org.",
-                            size_px: 20,
-                            anchor_x: 0.5,
-                            anchor_y: 0.5 }
+  
+  args.state.message_test ||= {
+    text: "ONE: This is a test message.",
+    speed: Speeds.SLOW,
+    expression: Expressions.NORMAL
+  }
 
-  args.outputs.labels  << { x: 640,
-                            y: 400,
-                            text: "The code that powers what you're seeing right now is located at ./mygame/app/main.rb.",
-                            size_px: 20,
-                            anchor_x: 0.5,
-                            anchor_y: 0.5 }
+  args.state.message_test_two ||= {
+    text: "TWO: Just another one of my silly little messages",
+    speed: Speeds.MEDIUM,
+    expression: Expressions.NORMAL
+  }
 
-  args.outputs.labels  << { x: 640,
-                            y: 380,
-                            text: "(you can change the code while the app is running and see the updates live)",
-                            size_px: 20,
-                            anchor_x: 0.5,
-                            anchor_y: 0.5 }
+  args.state.message_test_three ||= {
+    text: "THREE: A third message that is extremely fast.",
+    speed: Speeds.FAST,
+    expression: Expressions.NORMAL
+  }
 
-  args.outputs.sprites << { x: args.state.logo_rect.x,
-                            y: args.state.logo_rect.y,
-                            w: args.state.logo_rect.w,
-                            h: args.state.logo_rect.h,
-                            path: 'dragonruby.png',
-                            angle: Kernel.tick_count }
+  args.state.messages ||= []
 
-  args.outputs.labels  << { x: 640,
-                            y: 180,
-                            text: "(use arrow keys to move the logo around)",
-                            size_px: 20,
-                            anchor_x: 0.5,
-                            anchor_y: 0.5 }
+  queue_message args.state.message_test, args if args.inputs.keyboard.key_down.a
+  queue_message args.state.message_test_two, args if args.inputs.keyboard.key_down.b
+  queue_message args.state.message_test_three, args if args.inputs.keyboard.key_down.c
 
-  args.outputs.labels  << { x: 640,
-                            y: 80,
-                            text: 'Join the Discord Server! https://discord.dragonruby.org',
-                            size_px: 30,
-                            anchor_x: 0.5 }
+  puts args.state.messages
 
-  if args.inputs.keyboard.left
-    args.state.logo_rect.x -= 10
-  elsif args.inputs.keyboard.right
-    args.state.logo_rect.x += 10
-  end
+  play_message_queue args
+end
 
-  if args.inputs.keyboard.down
-    args.state.logo_rect.y -= 10
-  elsif args.inputs.keyboard.up
-    args.state.logo_rect.y += 10
-  end
+def text_box
+  w = 1280
+  h = 256
+  color = { r: 30, g: 30, b: 30}
 
-  if args.state.logo_rect.x > 1280
-    args.state.logo_rect.x = 0
-  elsif args.state.logo_rect.x < 0
-    args.state.logo_rect.x = 1280
-  end
+  {
+    x: 0,
+    y: Grid.h - h,
+    w: w,
+    h: h,
+  }.merge(color)
+end
 
-  if args.state.logo_rect.y > 720
-    args.state.logo_rect.y = 0
-  elsif args.state.logo_rect.y < 0
-    args.state.logo_rect.y = 720
+# msg should be a hash with message string and metadata
+def queue_message message, args
+  args.state.messages.unshift message
+end
+
+def clear_message_queue args
+  args.state.messages.clear
+end
+
+def play_message_queue args
+  args.outputs.labels << {
+    x: 200, 
+    y: 500, 
+    text: args.state.displayed_message,
+    size_enum: 10,
+    r: 255
+  }
+
+  if args.state.current_message
+
+    if args.state.new_character_tick.elapsed_time >= args.state.current_message.speed
+      args.state.new_character_tick = Kernel.tick_count
+      args.state.displayed_message += args.state.current_message.text[args.state.displayed_message.size]
+    end
+
+    if args.inputs.keyboard.key_down.space && args.state.displayed_message.size < args.state.current_message.text.size
+      args.state.displayed_message = args.state.current_message.text
+    end
+
+    args.state.current_message = nil if args.state.displayed_message.size >= args.state.current_message.text.size
+  elsif args.state.messages.size > 0 && args.inputs.keyboard.key_down.space
+    args.state.displayed_message = ""
+    args.state.current_message = args.state.messages.pop
+    
   end
 end
