@@ -1,6 +1,16 @@
 {
- "1" : "Hello",
- "2" : "Welcome to the game",
- "3" : "What is happening",
- "4" : "This is a 4th message."
+  "welcome": [
+    {
+    "text": "You awaken inside a labyrinth of sterile concrete walls.",
+    "speed": 0.06,
+    "expression": 1,
+    "size": 10
+    },
+    {
+    "text": "You are alone.",
+    "speed" : 0.25,
+    "expression": 1,
+    "size": 10
+    }
+  ]
 }

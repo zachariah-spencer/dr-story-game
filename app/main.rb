@@ -34,15 +34,17 @@ def tick args
   args.state.space_bar_debounce ||= false
   args.state.message_data ||= GTK.parse_json_file "data/messages.json"
   if Kernel.tick_count == 0
-    args.state.message_data.values.each do |message_text|
-      
-      message = {
-        text: message_text,
-        speed: Speeds.SLOW,
-        expression: Expressions.NORMAL,
-        size: Sizes.MEDIUM,
-      }
+    args.state.message_data["welcome"].each_with_index do |data, i|
 
+      puts data
+
+      message = {
+        id: "welcome#{i}",
+        text: data["text"],
+        speed: data["speed"].seconds,
+        expression: data["expression"],
+        size: data["size"],
+      }
       queue_message message, args
     end
   end
@@ -79,8 +81,6 @@ def tick args
     expression: Expressions.NORMAL,
     size: Sizes.MEDIUM,
   }
-
-  puts args.state.message_test
 
   args.state.message_test_two ||= {
     text: "TWO: Just another one of my silly little messages",
@@ -147,11 +147,11 @@ end
 
 def play_message_queue args
   args.outputs.labels << {
-    x: (Grid.w / 2) - 8.6 * args.state.message_character_offset, 
+    x: (Grid.w / 2) - 9 * args.state.message_character_offset, 
     y: Grid.h - 32, 
     text: args.state.displayed_message,
     alignment_enum: 0,
-    size_enum: 8,
+    size_px: 48,
     font: $FONT,
     r: 210,
     g: 210,
@@ -169,12 +169,10 @@ def play_message_queue args
       args.state.displayed_message += args.state.current_message.text[args.state.displayed_message.size]
     end
 
-    # if args.inputs.keyboard.key_down.space && args.state.displayed_message.size < args.state.current_message.text.size
-    #   args.state.displayed_message = args.state.current_message.text
-    # end
-
     args.state.current_message = nil if args.state.displayed_message.size >= args.state.current_message.text.size
+
   elsif args.state.messages.size > 0 && args.inputs.keyboard.key_down.space
+
     args.state.space_bar_debounce = true
     args.state.displayed_message = ""
     args.state.current_message = args.state.messages.pop
