@@ -5,36 +5,56 @@ end
 $FONT = "fonts/merriweather.ttf"
 
 def tick args
-
-  Speeds ||= {
-    TURTLE: 0.5.seconds,
-    SLOW: 0.25.seconds,
-    MEDIUM: 0.06.seconds,
-    FAST: 0.01.seconds,
-    HYPER: 0.002.seconds
-  }
-
-  Expressions ||= {
-    NORMAL: 1,
-    QUIET: 2,
-    LOUD: 3
-  }
-
-  Sizes ||= {
-    SMALL: 3,
-    MEDIUM: 10,
-    LARGE: 20,
-    HUGE: 30
-  }
+  defaults args
+  calc_particles args
+  play_message_queue args
 
   args.outputs.background_color = [15,15,15]
+  args.state.particles.each do |particle|
+    args.outputs.solids << particle
+  end
+end
 
-  args.state.messages ||= []
-  args.state.particles ||= []
-  args.state.space_bar_debounce ||= false
-  args.state.message_data ||= GTK.parse_json_file "data/messages.json"
+def defaults args
   if Kernel.tick_count == 0
-    args.state.message_data["welcome"].each_with_index do |data, i|
+    Speeds ||= {
+      TURTLE: 0.5.seconds,
+      SLOW: 0.25.seconds,
+      MEDIUM: 0.06.seconds,
+      FAST: 0.01.seconds,
+      HYPER: 0.002.seconds
+    }
+
+    Expressions ||= {
+      NORMAL: 1,
+      QUIET: 2,
+      LOUD: 3
+    }
+
+    Sizes ||= {
+      SMALL: 3,
+      MEDIUM: 10,
+      LARGE: 20,
+      HUGE: 30
+    }
+
+    args.state.messages ||= []
+    args.state.particles ||= []
+    args.state.space_bar_debounce ||= false
+    args.state.message_data ||= GTK.parse_json_file "data/messages.json"
+
+    args.state.current_message ||= nil
+    args.state.displayed_message ||= ""
+    args.state.new_character_tick ||= 0
+    args.state.message_character_offset ||= 0
+
+    default_messages args
+    default_particles args
+  end
+end
+
+def default_messages args
+  args.state.message_data["welcome"].each_with_index do |data, i|
 
       puts data
 
@@ -46,68 +66,25 @@ def tick args
         size: data["size"],
       }
       queue_message message, args
-    end
   end
+end
 
-  
-  if args.state.particles.empty?
-    50.times_with_index do |i|
-      scale = Numeric.rand(0.5..3.0)
-      args.state.particles << { 
-        id: "particle_#{i}", 
-        x: Numeric.rand(0..1280),
-        y: Numeric.rand(0..720),
-        dx: Numeric.rand(-0.25..0.25),
-        dy: Numeric.rand(-0.25..0.25),
-        w: scale,
-        h: scale,
-        r: 210,
-        g: 210,
-        b: 210
-      }
-    end
+def default_particles args
+  50.times_with_index do |i|
+    scale = Numeric.rand(0.5..3.0)
+    args.state.particles << { 
+      id: "particle_#{i}", 
+      x: Numeric.rand(0..1280),
+      y: Numeric.rand(0..720),
+      dx: Numeric.rand(-0.25..0.25),
+      dy: Numeric.rand(-0.25..0.25),
+      w: scale,
+      h: scale,
+      r: 210,
+      g: 210,
+      b: 210
+    }
   end
-
-
-  args.state.current_message ||= nil
-  args.state.displayed_message ||= ""
-  args.state.new_character_tick ||= 0
-  args.state.message_character_offset ||= 0
-
-  
-  args.state.message_test ||= {
-    text: "ONE: This is a test message.",
-    speed: Speeds.SLOW,
-    expression: Expressions.NORMAL,
-    size: Sizes.MEDIUM,
-  }
-
-  args.state.message_test_two ||= {
-    text: "TWO: Just another one of my silly little messages",
-    speed: Speeds.MEDIUM,
-    expression: Expressions.NORMAL,
-    size: Sizes.MEDIUM,
-  }
-
-  args.state.message_test_three ||= {
-    text: "12345678901234567890123456789012345678901234567890123456789012345678",
-    speed: Speeds.FAST,
-    expression: Expressions.NORMAL,
-    size: Sizes.MEDIUM,
-  }
-
-  
-
-  queue_message args.state.message_test, args if args.inputs.keyboard.key_down.a
-  queue_message args.state.message_test_two, args if args.inputs.keyboard.key_down.b
-  queue_message args.state.message_test_three, args if args.inputs.keyboard.key_down.c
-
-  calc_particles args
-  args.state.particles.each do |particle|
-    args.outputs.solids << particle
-  end
-
-  play_message_queue args
 end
 
 def calc_particles args
