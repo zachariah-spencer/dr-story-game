@@ -5,9 +5,48 @@ end
 $FONT = "fonts/merriweather.ttf"
 
 def tick args
+
+  Speeds ||= {
+    TURTLE: 0.5.seconds,
+    SLOW: 0.25.seconds,
+    MEDIUM: 0.06.seconds,
+    FAST: 0.01.seconds,
+    HYPER: 0.002.seconds
+  }
+
+  Expressions ||= {
+    NORMAL: 1,
+    QUIET: 2,
+    LOUD: 3
+  }
+
+  Sizes ||= {
+    SMALL: 3,
+    MEDIUM: 10,
+    LARGE: 20,
+    HUGE: 30
+  }
+
   args.outputs.background_color = [15,15,15]
 
+  args.state.messages ||= []
   args.state.particles ||= []
+  args.state.space_bar_debounce ||= false
+  args.state.message_data ||= GTK.parse_json_file "data/messages.json"
+  if Kernel.tick_count == 0
+    args.state.message_data.values.each do |message_text|
+      
+      message = {
+        text: message_text,
+        speed: Speeds.SLOW,
+        expression: Expressions.NORMAL,
+        size: Sizes.MEDIUM,
+      }
+
+      queue_message message, args
+    end
+  end
+
   
   if args.state.particles.empty?
     50.times_with_index do |i|
@@ -32,26 +71,6 @@ def tick args
   args.state.displayed_message ||= ""
   args.state.new_character_tick ||= 0
   args.state.message_character_offset ||= 0
-  Speeds ||= {
-    TURTLE: 0.5.seconds,
-    SLOW: 0.25.seconds,
-    MEDIUM: 0.06.seconds,
-    FAST: 0.01.seconds,
-    HYPER: 0.002.seconds
-  }
-
-  Expressions ||= {
-    NORMAL: 1,
-    QUIET: 2,
-    LOUD: 3
-  }
-
-  Sizes ||= {
-    SMALL: 3,
-    MEDIUM: 10,
-    LARGE: 20,
-    HUGE: 30
-  }
 
   
   args.state.message_test ||= {
@@ -60,6 +79,8 @@ def tick args
     expression: Expressions.NORMAL,
     size: Sizes.MEDIUM,
   }
+
+  puts args.state.message_test
 
   args.state.message_test_two ||= {
     text: "TWO: Just another one of my silly little messages",
@@ -75,7 +96,7 @@ def tick args
     size: Sizes.MEDIUM,
   }
 
-  args.state.messages ||= []
+  
 
   queue_message args.state.message_test, args if args.inputs.keyboard.key_down.a
   queue_message args.state.message_test_two, args if args.inputs.keyboard.key_down.b
@@ -139,17 +160,22 @@ def play_message_queue args
 
   if args.state.current_message
 
-    if args.state.new_character_tick.elapsed_time >= args.state.current_message.speed
+    playback_speed = args.state.current_message.speed
+    playback_speed = 0.02 if args.inputs.keyboard.key_held.space unless args.state.space_bar_debounce
+    args.state.space_bar_debounce = false if args.inputs.keyboard.key_up.space
+
+    if args.state.new_character_tick.elapsed_time >= playback_speed
       args.state.new_character_tick = Kernel.tick_count
       args.state.displayed_message += args.state.current_message.text[args.state.displayed_message.size]
     end
 
-    if args.inputs.keyboard.key_down.space && args.state.displayed_message.size < args.state.current_message.text.size
-      args.state.displayed_message = args.state.current_message.text
-    end
+    # if args.inputs.keyboard.key_down.space && args.state.displayed_message.size < args.state.current_message.text.size
+    #   args.state.displayed_message = args.state.current_message.text
+    # end
 
     args.state.current_message = nil if args.state.displayed_message.size >= args.state.current_message.text.size
   elsif args.state.messages.size > 0 && args.inputs.keyboard.key_down.space
+    args.state.space_bar_debounce = true
     args.state.displayed_message = ""
     args.state.current_message = args.state.messages.pop
     args.state.message_character_offset = args.state.current_message.text.size if args.state.current_message
