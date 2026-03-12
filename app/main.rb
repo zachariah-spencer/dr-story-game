@@ -100,19 +100,6 @@ def calc_particles args
   end
 end
 
-def text_box
-  w = 1280
-  h = 256
-  color = { r: 30, g: 30, b: 30}
-
-  {
-    x: 0,
-    y: Grid.h - h,
-    w: w,
-    h: h,
-  }.merge(color)
-end
-
 # msg should be a hash with message string and metadata
 def queue_message message, args
   args.state.messages.unshift message
